@@ -11,6 +11,9 @@ dependencies:
   express:
     specifier: ^4.19.2
     version: 4.19.2
+  graphql:
+    specifier: ^16.8.1
+    version: 16.8.1
   graphql-yoga:
     specifier: ^5.3.0
     version: 5.3.0(graphql@16.8.1)
