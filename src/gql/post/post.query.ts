@@ -8,7 +8,11 @@ schemaBuilder.queryField("posts", (t) =>
     type: [PostEntity],
     resolve: async () => {
       const repository = db.getRepository(PostEntity);
-      const posts = await repository.find();
+
+      const posts = await repository.find({
+        relations: ["user"],
+      });
+
       return posts;
     },
   })
@@ -27,7 +31,11 @@ schemaBuilder.queryField("post", (t) =>
       const { id } = args;
 
       const repository = db.getRepository(PostEntity);
-      const post = await repository.findOne({ where: { id } });
+
+      const post = await repository.findOne({
+        where: { id },
+        relations: ["user"],
+      });
 
       if (!post) {
         throw new GraphQLError("Post not found.");

@@ -10,7 +10,13 @@ import { initDatabase } from "./database";
 const app = express();
 const port = 3000;
 
-const yoga = createYoga({ schema });
+const yoga = createYoga({
+  schema,
+  cors: {
+    origin: "*",
+    credentials: true,
+  },
+});
 
 app.use(yoga.graphqlEndpoint, yoga);
 
