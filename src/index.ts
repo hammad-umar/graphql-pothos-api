@@ -4,27 +4,22 @@ import { join } from "path";
 import SchemaBuilder from "@pothos/core";
 import { createYoga } from "graphql-yoga";
 import { GraphQLError, lexicographicSortSchema, printSchema } from "graphql";
+import { DataSource } from "typeorm";
+import { UserEntity } from "./user/user.entity";
 
 const app = express();
 const port = 3000;
 
 const schemaBuilder = new SchemaBuilder({});
 
-class User {
-  constructor(
-    public id: number,
-    public name: string,
-    public email: string,
-    public verified: boolean
-  ) {}
-}
+const dataSource = new DataSource({
+  type: "sqlite",
+  database: "db.sql",
+  synchronize: true,
+  entities: [UserEntity],
+});
 
-let users: User[] = [
-  new User(1, "Hammad Umar", "hammadumar8080@gmail.com", true),
-  new User(2, "Ali", "ali@gmail.com", false),
-];
-
-schemaBuilder.objectType(User, {
+schemaBuilder.objectType(UserEntity, {
   name: "User",
   description: "Represents User",
   fields: (t) => ({
@@ -42,24 +37,28 @@ schemaBuilder.queryType({
     }),
 
     users: t.field({
-      type: [User],
-      resolve: () => {
+      type: [UserEntity],
+      resolve: async () => {
+        const repository = dataSource.getRepository(UserEntity);
+
+        const users = await repository.find();
         return users;
       },
     }),
 
     user: t.field({
-      type: User,
+      type: UserEntity,
       args: {
         id: t.arg({
           type: "Int",
           required: true,
         }),
       },
-      resolve: (_, args) => {
+      resolve: async (_, args) => {
         const { id } = args;
+        const repository = dataSource.getRepository(UserEntity);
 
-        const user = users.find((user) => user.id === id);
+        const user = await repository.findOne({ where: { id } });
 
         if (!user) {
           throw new GraphQLError("User not found");
@@ -74,7 +73,7 @@ schemaBuilder.queryType({
 schemaBuilder.mutationType({
   fields: (t) => ({
     createUser: t.field({
-      type: User,
+      type: UserEntity,
       args: {
         name: t.arg({
           type: "String",
@@ -85,18 +84,18 @@ schemaBuilder.mutationType({
           required: true,
         }),
       },
-      resolve: (_, args) => {
+      resolve: async (_, args) => {
         const { name, email } = args;
+        const repository = dataSource.getRepository(UserEntity);
 
-        const alreadyExists = users.find((user) => user.email === email);
+        const alreadyExists = await repository.findOne({ where: { email } });
 
         if (alreadyExists) {
           throw new GraphQLError("Email already taken.");
         }
 
-        const newUser = new User(users.length + 1, name, email, true);
-        users.push(newUser);
-        return newUser;
+        const createdUser = repository.create({ name, email });
+        return repository.save(createdUser);
       },
     }),
   }),
@@ -113,6 +112,15 @@ const schemaAsString = printSchema(lexicographicSortSchema(schema));
 
 app.listen(port, () => {
   console.log(`Server is up on port:${port}`);
+
+  dataSource
+    .initialize()
+    .then(() => {
+      console.log("Connected to database.");
+    })
+    .catch((err) => {
+      console.log("Error connecting with database", err);
+    });
 });
 
 writeFileSync(join(__dirname, "../schema.graphql"), schemaAsString);
