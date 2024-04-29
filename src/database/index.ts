@@ -1,11 +1,12 @@
 import { DataSource } from "typeorm";
 import { UserEntity } from "./entities/user.entity";
+import { PostEntity } from "./entities/post.entity";
 
 export const db = new DataSource({
   type: "sqlite",
   database: "db.sql",
   synchronize: true,
-  entities: [UserEntity],
+  entities: [UserEntity, PostEntity],
 });
 
 export const initDatabase = async (): Promise<void> => {

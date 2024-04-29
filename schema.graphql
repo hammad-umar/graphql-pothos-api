@@ -2,8 +2,18 @@ type Mutation {
   createUser(email: String!, name: String!): User!
 }
 
+"""Represents Post"""
+type Post {
+  content: String!
+  id: Int!
+  title: String!
+  user: User!
+}
+
 type Query {
   hello: String!
+  post(id: Int!): Post!
+  posts: [Post!]!
   user(id: Int!): User!
   users: [User!]!
 }
